@@ -38,7 +38,7 @@ export default function Dashboard() {
     setSearching(true)
     await new Promise(r => setTimeout(r, 1500))
     if (mode === 'company') {
-      const { data } = await supabase.from('profils').select('*').limit(5)
+      const { data } = await supabase.from('profiles').select('*').limit(5)
       setResults(data?.length ? data : MOCK_CANDIDATES)
     } else {
       const { data } = await supabase.from('emplois').select('*').limit(5)
