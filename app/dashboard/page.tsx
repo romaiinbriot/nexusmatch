@@ -179,13 +179,17 @@ export default function Dashboard() {
             </div>
           )}
 
-          {['profile', 'network', 'market', 'interview', 'negotiate'].includes(page) && (
-            <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>{NAV.find(n => n.id === page)?.icon}</div>
-              <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{NAV.find(n => n.id === page)?.label}</div>
-              <div style={{ color: '#8896A7', fontSize: 14 }}>Module en cours de développement</div>
-            </div>
-          )}
+          {page === 'profile' && (
+  <ProfilePage user={user} supabase={supabase} />
+)}
+
+{['network', 'market', 'interview', 'negotiate'].includes(page) && (
+  <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+    <div style={{ fontSize: 48, marginBottom: 16 }}>{NAV.find(n => n.id === page)?.icon}</div>
+    <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{NAV.find(n => n.id === page)?.label}</div>
+    <div style={{ color: '#8896A7', fontSize: 14 }}>Module en cours de développement</div>
+  </div>
+)}
         </div>
       </div>
     </div>
@@ -197,6 +201,163 @@ const MOCK_CANDIDATES = [
   { full_name: 'Thomas Mercier', title: 'Lead Developer', location: 'Lyon' },
   { full_name: 'Camille Roux', title: 'Head of Marketing', location: 'Paris' },
 ]
+
+function ProfilePage({ user, supabase }: { user: any, supabase: any }) {
+  const [profile, setProfile] = useState<any>({
+    full_name: '', title: '', bio: '', location: '',
+    salary_min: 0, salary_max: 0, experience_years: 0,
+    skills: [], languages: [], role: 'candidate', visibility: 'selective'
+  })
+  const [skillInput, setSkillInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data } = await supabase.from('profils').select('*').eq('id', user.id).single()
+      if (data) setProfile(data)
+      setLoading(false)
+    }
+    loadProfile()
+  }, [])
+
+  const saveProfile = async () => {
+    setSaving(true)
+    await supabase.from('profils').upsert({ ...profile, id: user.id })
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const addSkill = () => {
+    if (skillInput.trim() && !profile.skills.includes(skillInput.trim())) {
+      setProfile((p: any) => ({ ...p, skills: [...p.skills, skillInput.trim()] }))
+      setSkillInput('')
+    }
+  }
+
+  const removeSkill = (skill: string) => {
+    setProfile((p: any) => ({ ...p, skills: p.skills.filter((s: string) => s !== skill) }))
+  }
+
+  if (loading) return <div style={{ color: '#4F8EF7', padding: 40 }}>Chargement...</div>
+
+  const inputStyle = {
+    width: '100%', background: '#101624', border: '1px solid #1A2540',
+    borderRadius: 9, padding: '10px 14px', color: '#E2E8F0',
+    fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif'
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 22, fontWeight: 800 }}>Mon Profil</h2>
+        <button onClick={saveProfile} disabled={saving}
+          style={{ background: saved ? '#22C55E' : 'linear-gradient(135deg, #4F8EF7, #2563EB)', color: '#fff', border: 'none', borderRadius: 9, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+          {saving ? '⏳ Sauvegarde...' : saved ? '✅ Sauvegardé !' : '💾 Sauvegarder'}
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        {/* Type */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px', gridColumn: '1 / -1' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Je suis</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[['candidate', '👤 Candidat'], ['recruiter', '🏢 Recruteur']].map(([v, l]) => (
+              <button key={v} onClick={() => setProfile((p: any) => ({ ...p, role: v }))}
+                style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', background: profile.role === v ? '#4F8EF7' : 'transparent', color: profile.role === v ? '#fff' : '#8896A7', border: `1.5px solid ${profile.role === v ? '#4F8EF7' : '#1A2540'}` }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Nom */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Nom complet</div>
+          <input value={profile.full_name || ''} onChange={e => setProfile((p: any) => ({ ...p, full_name: e.target.value }))}
+            placeholder="Ex: Sophie Laurent" style={inputStyle} />
+        </div>
+
+        {/* Titre */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Titre / Poste</div>
+          <input value={profile.title || ''} onChange={e => setProfile((p: any) => ({ ...p, title: e.target.value }))}
+            placeholder="Ex: Senior Product Manager" style={inputStyle} />
+        </div>
+
+        {/* Localisation */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Localisation</div>
+          <input value={profile.location || ''} onChange={e => setProfile((p: any) => ({ ...p, location: e.target.value }))}
+            placeholder="Ex: Paris, Remote" style={inputStyle} />
+        </div>
+
+        {/* Expérience */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Années d'expérience</div>
+          <input type="number" value={profile.experience_years || 0} onChange={e => setProfile((p: any) => ({ ...p, experience_years: parseInt(e.target.value) }))}
+            style={inputStyle} />
+        </div>
+
+        {/* Salaire min */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Salaire min (k€/an)</div>
+          <input type="number" value={profile.salary_min || 0} onChange={e => setProfile((p: any) => ({ ...p, salary_min: parseInt(e.target.value) }))}
+            style={inputStyle} />
+        </div>
+
+        {/* Salaire max */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Salaire max (k€/an)</div>
+          <input type="number" value={profile.salary_max || 0} onChange={e => setProfile((p: any) => ({ ...p, salary_max: parseInt(e.target.value) }))}
+            style={inputStyle} />
+        </div>
+
+        {/* Bio */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px', gridColumn: '1 / -1' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Bio</div>
+          <textarea value={profile.bio || ''} onChange={e => setProfile((p: any) => ({ ...p, bio: e.target.value }))}
+            placeholder="Décrivez votre parcours, vos forces, ce que vous cherchez..."
+            style={{ ...inputStyle, minHeight: 100, resize: 'none' }} />
+        </div>
+
+        {/* Compétences */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px', gridColumn: '1 / -1' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Compétences</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input value={skillInput} onChange={e => setSkillInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addSkill()}
+              placeholder="Ex: React, Product Management..." style={{ ...inputStyle, flex: 1 }} />
+            <button onClick={addSkill} style={{ background: '#4F8EF7', color: '#fff', border: 'none', borderRadius: 9, padding: '10px 16px', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>+</button>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(profile.skills || []).map((skill: string) => (
+              <span key={skill} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: '#4F8EF722', border: '1px solid #4F8EF744', color: '#4F8EF7', fontSize: 12.5, fontWeight: 600 }}>
+                {skill}
+                <span onClick={() => removeSkill(skill)} style={{ cursor: 'pointer', opacity: 0.7 }}>×</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Visibilité */}
+        <div style={{ background: '#101624', border: '1px solid #1A2540', borderRadius: 12, padding: '20px', gridColumn: '1 / -1' }}>
+          <div style={{ fontSize: 11, color: '#4B5A6E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Visibilité du profil</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[['visible', '🟢 Visible', '#22C55E'], ['selective', '🟡 Sélectif', '#F0B429'], ['stealth', '🔴 Stealth', '#F87171']].map(([v, l, c]) => (
+              <button key={v} onClick={() => setProfile((p: any) => ({ ...p, visibility: v }))}
+                style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: profile.visibility === v ? c + '22' : 'transparent', color: profile.visibility === v ? c : '#8896A7', border: `1.5px solid ${profile.visibility === v ? c + '66' : '#1A2540'}` }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const MOCK_JOBS = [
   { title: 'VP Engineering', sector: 'Cloud / Infra', location: 'Paris' },
