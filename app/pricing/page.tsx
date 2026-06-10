@@ -117,7 +117,7 @@ const handleSubscribe = async (plan: typeof PLANS[0]) => {
               </div>
               <button onClick={() => handleSubscribe(plan)} disabled={loading === plan.name}
                 style={{
-                  width: '100%', padding: '12px', borderRadius: 10, border: 'none',
+                  width: '100%', padding: '12px', borderRadius: 10,
                   background: plan.price === 0 ? 'transparent' : plan.color,
                   color: plan.price === 0 ? plan.color : plan.name === 'Recruteur Starter' ? '#000' : '#fff',
                   border: plan.price === 0 ? `1.5px solid ${plan.color}` : 'none',
