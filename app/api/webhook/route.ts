@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       const invoice = event.data.object as Stripe.Invoice
       await supabase.from('abonnements')
         .update({ status: 'past_due' })
-        .eq('stripe_sub_id', invoice.subscription as string)
+        .eq('stripe_sub_id', (invoice as any).subscription as string)
       break
     }
   }
