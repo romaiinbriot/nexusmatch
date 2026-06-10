@@ -51,13 +51,20 @@ export default function Pricing() {
   const router = useRouter()
   const supabase = createClient()
 
-  const handleSubscribe = async (plan: typeof PLANS[0]) => {
+const handleSubscribe = async (plan: typeof PLANS[0]) => {
     if (plan.price === 0) { router.push('/login'); return }
     setLoading(plan.name)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
-    // Redirection vers Stripe Checkout (à connecter avec l'API)
-    alert(`Abonnement ${plan.name} à ${plan.price}€/mois — Intégration Stripe Checkout en cours !`)
+    
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId: plan.priceId, email: user.email })
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    else alert('Erreur : ' + data.error)
     setLoading(null)
   }
 
